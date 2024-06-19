@@ -7,14 +7,15 @@
 
 import SwiftUI
 
-public struct ImmersiveFeedView<SectionType: Hashable & Sendable, ItemType: Hashable & Sendable, Content: View>: UIViewRepresentable {
+public struct ImmersiveFeedView<SectionType: Hashable & Sendable, ItemType: Hashable & Sendable, CellContent: View, OverlayContent: View>: UIViewRepresentable {
     
-    public typealias UIViewType = ImmersiveFeedCollectionView<SectionType, ItemType, Content>
+    public typealias UIViewType = ImmersiveFeedCollectionView<SectionType, ItemType, CellContent, OverlayContent>
     
     @Binding var indexPathPresented: IndexPath
     
     let snapshot: NSDiffableDataSourceSnapshot<SectionType, ItemType>
-    let cellContentProvider: (IndexPath, ItemType) -> Content
+    let cellContentProvider: (IndexPath, ItemType) -> CellContent
+    let overlayContentProvider: (Int) -> OverlayContent
     
     var isDismissing: ((IndexPath) -> Void)?
     var didPresent: ((IndexPath) -> Void)?
@@ -22,15 +23,38 @@ public struct ImmersiveFeedView<SectionType: Hashable & Sendable, ItemType: Hash
     var refreshControlColor: Color?
     var refreshControlAction: (() async -> Void)?
     
-    public func makeUIView(context: Context) -> ImmersiveFeedCollectionView<SectionType, ItemType, Content> {
-        let collectionView = ImmersiveFeedCollectionView<SectionType, ItemType, Content>(cellContentProvider: cellContentProvider)
+    public init(
+        indexPathPresented: Binding<IndexPath>,
+        snapshot: NSDiffableDataSourceSnapshot<SectionType, ItemType>,
+        cellContentProvider: @escaping (IndexPath, ItemType) -> CellContent,
+        overlayContentProvider: @escaping (Int) -> OverlayContent,
+        isDismissing: ((IndexPath) -> Void)? = nil,
+        didPresent: ((IndexPath) -> Void)? = nil,
+        refreshControlColor: Color? = nil,
+        refreshControlAction: (() async -> Void)? = nil
+    ) {
+        self._indexPathPresented = indexPathPresented
+        self.snapshot = snapshot
+        self.cellContentProvider = cellContentProvider
+        self.overlayContentProvider = overlayContentProvider
+        self.isDismissing = isDismissing
+        self.didPresent = didPresent
+        self.refreshControlColor = refreshControlColor
+        self.refreshControlAction = refreshControlAction
+    }
+    
+    public func makeUIView(context: Context) -> UIViewType {
+        let collectionView = ImmersiveFeedCollectionView<SectionType, ItemType, CellContent, OverlayContent>(
+            cellContentProvider: cellContentProvider,
+            overlayContentProvider: overlayContentProvider
+        )
         collectionView.delegate = context.coordinator
         collectionView.diffableDataSource.apply(snapshot, animatingDifferences: false)
         collectionView.setupRefreshControl(color: refreshControlColor, action: refreshControlAction)
         return collectionView
     }
     
-    public func updateUIView(_ collectionView: ImmersiveFeedCollectionView<SectionType, ItemType, Content>, context: Context) {
+    public func updateUIView(_ collectionView: UIViewType, context: Context) {
         collectionView.diffableDataSource.apply(snapshot, animatingDifferences: false)
         
         if !collectionView.indexPathsForVisibleItems.contains(indexPathPresented) {

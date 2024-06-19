@@ -7,27 +7,48 @@
 
 import SwiftUI
 
-public final class ImmersiveFeedCollectionView<SectionType: Hashable & Sendable, ItemType: Hashable & Sendable, Content: View>: UICollectionView {
+public final class ImmersiveFeedCollectionView<
+    SectionType: Hashable & Sendable,
+    ItemType: Hashable & Sendable,
+    CellContent: View,
+    OverlayContent: View
+>: UICollectionView {
     
-    private let cellContentProvider: (IndexPath, ItemType) -> Content
+    private let cellContentProvider: (IndexPath, ItemType) -> CellContent
+    private let overlayContentProvider: (Int) -> OverlayContent
     
     lazy var diffableDataSource: UICollectionViewDiffableDataSource<SectionType, ItemType> = {
-        let cell = ImmersiveFeedCollectionViewCell.register(content: cellContentProvider)
-        return .init(collectionView: self) { collectionView, indexPath, item in
+        let cell = ImmersiveFeedCell.register(content: cellContentProvider)
+        let background = ImmersiveFeedSectionOverlay.register(content: overlayContentProvider)
+        let dataSource = UICollectionViewDiffableDataSource<SectionType, ItemType>(collectionView: self) { collectionView, indexPath, item in
             collectionView.dequeueConfiguredReusableCell(using: cell, for: indexPath, item: item)
         }
+        dataSource.supplementaryViewProvider = { collectionView, _, indexPath in
+            collectionView.dequeueConfiguredReusableSupplementary(using: background, for: indexPath)
+        }
+        return dataSource
     }()
     
-    init(cellContentProvider: @escaping (IndexPath, ItemType) -> Content) {
+    init(cellContentProvider: @escaping (IndexPath, ItemType) -> CellContent, overlayContentProvider: @escaping (Int) -> OverlayContent) {
         self.cellContentProvider = cellContentProvider
+        self.overlayContentProvider = overlayContentProvider
+        
         let layout = {
             let size = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .fractionalHeight(1))
             let item = NSCollectionLayoutItem(layoutSize: size)
             let group = NSCollectionLayoutGroup.vertical(layoutSize: size, subitems: [item])
             let section = NSCollectionLayoutSection(group: group)
             section.orthogonalScrollingBehavior = .paging
+            section.boundarySupplementaryItems = [
+                .init(
+                    layoutSize: .init(widthDimension: .fractionalWidth(1), heightDimension: .fractionalHeight(1)),
+                    elementKind: "ImmersiveFeedSectionOverlay",
+                    containerAnchor: .init(edges: .all)
+                )
+            ]
             return UICollectionViewCompositionalLayout(section: section)
         }()
+        
         super.init(frame: .zero, collectionViewLayout: layout)
         backgroundColor = .clear
         contentInsetAdjustmentBehavior = .never
@@ -56,13 +77,13 @@ public final class ImmersiveFeedCollectionView<SectionType: Hashable & Sendable,
     }
     
     private func adjustRefreshControlFrame() {
-        guard let refreshControl else { return }
-        let offset = contentOffset.y
         let safeAreaInset = safeAreaInsets.top
+        guard let refreshControl, safeAreaInset > 0 else { return }
+        let offset = contentOffset.y
         refreshControl.frame = CGRect(
             x: refreshControl.frame.minX,
             y: offset + safeAreaInset,
-            width: refreshControl.bounds.width,
+            width: refreshControl.frame.width,
             height: refreshControl.frame.height
         )
     }
@@ -100,7 +121,8 @@ public final class ImmersiveFeedCollectionView<SectionType: Hashable & Sendable,
         // disable paging so collectionView can rest scrolled up
         isPagingEnabled = false
         // "let go" of user touch
-        setContentOffset(.init(x: 0, y: -safeAreaInsets.top), animated: true)
+        let offset = refreshControl?.frame.height ?? 0
+        setContentOffset(.init(x: 0, y: -offset), animated: true)
         isScrollEnabled = false
     }
     
