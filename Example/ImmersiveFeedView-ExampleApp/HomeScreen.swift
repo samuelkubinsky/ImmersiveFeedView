@@ -28,7 +28,11 @@ struct HomeScreen: View {
                 PostImageView(url: url)
             },
             overlayContentProvider: { section in
-                PostOverlayView(post: mockedPosts[section])
+                PostOverlayView(
+                    indexPathPresented: $indexPathPresented,
+                    section: section,
+                    post: mockedPosts[section]
+                )
             },
             isDismissing: { indexPath in
                 print("pause: \(indexPath)")
@@ -40,7 +44,7 @@ struct HomeScreen: View {
                 try? await Task.sleep(for: .seconds(2))
             }
         )
-//        .ignoresSafeArea()
+        .ignoresSafeArea()
     }
 }
 

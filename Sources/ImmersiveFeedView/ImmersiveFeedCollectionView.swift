@@ -19,12 +19,12 @@ public final class ImmersiveFeedCollectionView<
     
     lazy var diffableDataSource: UICollectionViewDiffableDataSource<SectionType, ItemType> = {
         let cell = ImmersiveFeedCell.register(content: cellContentProvider)
-        let background = ImmersiveFeedSectionOverlay.register(content: overlayContentProvider)
+        let overlay = ImmersiveFeedSectionOverlay.register(content: overlayContentProvider)
         let dataSource = UICollectionViewDiffableDataSource<SectionType, ItemType>(collectionView: self) { collectionView, indexPath, item in
             collectionView.dequeueConfiguredReusableCell(using: cell, for: indexPath, item: item)
         }
         dataSource.supplementaryViewProvider = { collectionView, _, indexPath in
-            collectionView.dequeueConfiguredReusableSupplementary(using: background, for: indexPath)
+            collectionView.dequeueConfiguredReusableSupplementary(using: overlay, for: indexPath)
         }
         return dataSource
     }()

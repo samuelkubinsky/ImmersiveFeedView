@@ -8,20 +8,17 @@
 import SwiftUI
 
 struct PostOverlayView: View {
+    @Binding var indexPathPresented: IndexPath
+    let section: Int
     let post: Post
     
     var gradient: some View {
         LinearGradient(
-            stops: [
-                .init(color: .black.opacity(0.8), location: 0.0),
-                .init(color: .black.opacity(0.0), location: 0.2),
-                .init(color: .black.opacity(0.0), location: 0.8),
-                .init(color: .black.opacity(0.8), location: 1.0)
-            ],
+            colors: [.clear, .black],
             startPoint: .top,
             endPoint: .bottom
         )
-//        .ignoresSafeArea()
+        .ignoresSafeArea()
     }
     
     var profile: some View {
@@ -56,15 +53,17 @@ struct PostOverlayView: View {
     }
     
     var pageIndicator: some View {
-//        HStack {
-//            ForEach(0 ..< post.images.count, id: \.self) { index in
+        HStack {
+            ForEach(0 ..< post.images.count, id: \.self) { index in
                 Rectangle()
                     .frame(height: 0.5)
                     .foregroundStyle(
-                        .white.opacity(0.5)
+                        .white.opacity(
+                            section == indexPathPresented.section && index == indexPathPresented.item ? 1 : 0.5
+                        )
                     )
-//            }
-//        }
+            }
+        }
     }
     
     var controls: some View {
@@ -120,6 +119,7 @@ struct PostOverlayView: View {
                 profile
                 
                 Spacer()
+                    .frame(height: 10)
                 
                 Group {
                     description
@@ -141,5 +141,9 @@ struct PostOverlayView: View {
 }
 
 #Preview {
-    PostOverlayView(post: mockedPosts[0])
+    PostOverlayView(
+        indexPathPresented: .constant(IndexPath(item: 0, section: 0)),
+        section: 0,
+        post: mockedPosts[0]
+    )
 }

@@ -26,7 +26,7 @@ public final class ImmersiveFeedSectionOverlay<Content: View>: UICollectionReusa
         view.translatesAutoresizingMaskIntoConstraints = false
         addSubview(view)
         NSLayoutConstraint.activate([
-            view.topAnchor.constraint(equalTo: topAnchor),
+//            view.topAnchor.constraint(equalTo: topAnchor),
             view.bottomAnchor.constraint(equalTo: bottomAnchor),
             view.leadingAnchor.constraint(equalTo: leadingAnchor),
             view.trailingAnchor.constraint(equalTo: trailingAnchor)
@@ -34,14 +34,15 @@ public final class ImmersiveFeedSectionOverlay<Content: View>: UICollectionReusa
     }
     
     public override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-//        if let hostingController {
-//            for subview in hostingController.view.subviews {
-//                let convertedPoint = subview.convert(point, from: self)
-//                if let hitView = subview.hitTest(convertedPoint, with: event) {
-//                    return hitView
-//                }
-//            }
-//        }
+        if let hostingController {
+            for subview in hostingController.view.subviews {
+                let convertedPoint = subview.convert(point, from: self)
+                
+                if subview.bounds.contains(convertedPoint) {
+                    return subview
+                }
+            }
+        }
         return nil
     }
     
